@@ -47,10 +47,15 @@ function hooktcp() {
             console.log("[" + Process.getCurrentThreadId() + "]socketRead0 > size: " + size + ",content: " + JSON.stringify(arg1))
             var byteArray = Java.array("byte", arg1)
             var content = '';
-            for(var i = 0; i < size; i++){
+            for (var i = 0; i < size; i++) {
                 content = content + String.fromCharCode(byteArray[i])
             }
-            console.log("[" + Process.getCurrentThreadId() + "]receive: " + content)
+            var socketimpl = this.impl.value
+            var address = socketimpl.address.value
+            var port = socketimpl.port.value
+
+            console.log("\naddress:" + address + ",port: " + port + "\n" + JSON.stringify(this.socket.value) + "\n[" + Process.getCurrentThreadId() + "]receive:" + content);
+
             printJavaStack('socketRead0()...')
             return size;
         }
@@ -59,12 +64,23 @@ function hooktcp() {
         var SocketOutputStreamClass = Java.use('java.net.SocketOutputStream')
         // hook socketWrite0()
         SocketOutputStreamClass.socketWrite0.implementation = function (arg0, arg1, arg2, arg3) {
-            var size = this.socketWrite0(arg0, arg1, arg2, arg3)
-            console.log("[" + Process.getCurrentThreadId() + "]socketWrite0 > size: " + arg3 + "--content: " + JSON.stringify(arg1))
-            var content = StringClass.$new(arg1)
-            console.log("[" + Process.getCurrentThreadId() + "]send: " + content)
+            var result = this.socketWrite0(arg0, arg1, arg2, arg3)
+            console.log("[" + Process.getCurrentThreadId() + "]socketWrite0 > result: " + arg3 + "--content: " + JSON.stringify(arg1))
+            var byteArray = Java.array("byte", arg1)
+            var content = '';
+            for (var i = 0; i < arg3; i++) {
+                content = content + String.fromCharCode(byteArray[i])
+            }
+
+            var socketimpl = this.impl.value
+            var address = socketimpl.address.value
+            var port = socketimpl.port.value
+
+            // console.log("[" + Process.getCurrentThreadId() + "]send: " + content)
+            console.log("send address:" + address + ",port: " + port + "[" + Process.getCurrentThreadId() + "]send:" + content);
+            console.log("\n" + JSON.stringify(this.socket.value) + "\n[" + Process.getCurrentThreadId() + "]send:" + content);
             printJavaStack('socketWrite0()...')
-            return size;
+            return result;
         }
     })
 }
